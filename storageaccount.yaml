@@ -1,0 +1,43 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+- stage: CreateStorageAccount
+  jobs:
+  - job: Create
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.x'
+        addToPath: true
+
+    - script: |
+        # Install Azure CLI
+        curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+        az --version
+      displayName: 'Install Azure CLI'
+
+    - script: |
+        # Login to Azure
+        az login --service-principal -u $(azureServicePrincipalId) -p $(azureServicePrincipalKey) --tenant $(azureTenantId)
+
+        # Set the subscription
+        az account set --subscription $(azureSubscriptionId)
+
+        # Create a resource group (if not already created)
+        az group create --name $(resourceGroupName) --location $(location)
+
+        # Create a storage account
+        az storage account create --name $(storageAccountName) --resource-group $(resourceGroupName) --location $(location) --sku Standard_LRS
+      displayName: 'Create Azure Storage Account'
+      env:
+        azureServicePrincipalId: $(azureServicePrincipalId)
+        azureServicePrincipalKey: $(azureServicePrincipalKey)
+        azureTenantId: $(azureTenantId)
+        azureSubscriptionId: $(azureSubscriptionId)
+        resourceGroupName: $(resourceGroupName)
+        storageAccountName: $(storageAccountName)
+        location: $(location)
